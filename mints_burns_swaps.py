@@ -18,6 +18,8 @@
 
 import time
 import datetime
+import json
+import sys
 
 from utils.etherscan_requests import get_block_no_by_time, get_pool_logs
 from Crypto.Hash import keccak
@@ -231,7 +233,7 @@ def main():
         args = parse_args()
         data = fetch_uniswap_transactions_in_range(
             args['pool_address'], args['start_date'], args['end_date'])
-        print(data)
+        print(json.dumps(data, indent = 4))
 
     except Exception as ex:
         print(ex, file=sys.stderr)

@@ -259,11 +259,11 @@ def parse_args():
     the pool's mints, burns and swaps in the date range using Etherscan API."""
 
     parser = ArgumentParser(description = description, allow_abbrev = False)
-    parser.add_argument("pool_address", metavar = "pool address", type = str,
+    parser.add_argument("pool_address", type = str,
         help = "the address of the relevant Uniswap v3 pool")
-    parser.add_argument("start_date", metavar = "start date", type = str,
+    parser.add_argument("start_date", type = str,
         help = "the start of the date range (dd/mm/yyyy)")
-    parser.add_argument("end_date", metavar="end date", type = str,
+    parser.add_argument("end_date", type = str,
         help = "the end of the date range (dd/mm/yyyy)")
 
     args = parser.parse_args()

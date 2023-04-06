@@ -65,8 +65,7 @@ def parse_args():
     indexed state in a pool is a mapping from bytes32 -> positions."""
 
     parser = ArgumentParser(description = description, allow_abbrev = False)
-    parser.add_argument("path_to_decoded_events", 
-        metavar = "path to decoded events", type = str,
+    parser.add_argument("path_to_decoded_events", type = str,
         help = "path to a file containing decoded events")
 
     args = parser.parse_args()

@@ -128,7 +128,7 @@ def get_pool_state(
 
     # Fetch the position information for the positions specified by the user
     position_indexed_state = {}
-    for position_key in positions:
+    for position_key in positions.values():
         # position_key_bytes = bytearray.fromhex(position_key)
         position           = pool.functions.positions(position_key).call()
         position_indexed_state[position_key] = position
@@ -187,7 +187,7 @@ def main():
 
     try:
         args = parse_args()
-        positions = json.load(open(args["path_to_positions"], "r"))["data"]
+        positions = json.load(open(args["path_to_positions"], "r"))
         timestamp = int(time.mktime(datetime.datetime.strptime(args["date"], "%d/%m/%Y").timetuple()))
         block = get_block_no_by_time(timestamp, "before")
         data = get_pool_state(

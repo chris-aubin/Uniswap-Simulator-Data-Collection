@@ -48,6 +48,7 @@ def get_relevant_positions(decoded_events):
             position_keccak = keccak.new(digest_bits = 256)
             position_keccak.update(position_key_encoded)
             position_key_hex = position_keccak.hexdigest()
+            position_key_hex = "0x" + position_key_hex
             positions.add(position_key_hex)
     
     return list(positions)

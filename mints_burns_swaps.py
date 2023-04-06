@@ -21,10 +21,11 @@ import json
 import sys
 import time
 
-from utils.etherscan_requests import get_block_no_by_time, get_pool_logs
+from argparse import ArgumentParser
 from Crypto.Hash import keccak
 from eth_abi import decode
-from argparse import ArgumentParser
+from eth_utils import to_checksum_address
+from utils.etherscan_requests import get_block_no_by_time, get_pool_logs
 
 
 #-----------------------------------------------------------------------
@@ -53,6 +54,18 @@ swap_keccak.update(b"Swap(address,address,int256,int256,uint160,uint128,int24)")
 swap_hash  = "0x" + swap_keccak.hexdigest()
 swap_types = ["int256", "int256", "uint160", "uint128", "int24"]
 
+def remove_address_padding(address_padded):
+    """Removes the padding from an address
+    
+    Addresses returned by the Etherscan API are padded such that they are 64
+    characters long, excluding the "0x". Ethereum addresses are 20 bytes long
+    (40 characters in hex), excluding the "0x". This function removes the 
+    padding from addresses returned by the Etherscan API.
+    """
+
+    address = address_padded[len(address_padded)-40:]
+    address = "0x" + address
+    return address
 
 def decode_mint(event):
     """Decodes mint events """
@@ -63,12 +76,16 @@ def decode_mint(event):
     method_data = decode(mint_types, data_bytes)
 
     # Indexed paramters
-    owner      = int(event["topics"][1], 16)
+    # All addresses returned by the Etherscan API need to be converted to 
+    # checksummed addresses for use with the web3py library.    
+    owner      = to_checksum_address(remove_address_padding(event["topics"][1]))
     tick_lower = int(event["topics"][2][2:], 16)
     tick_upper = int(event["topics"][3][2:], 16)
 
     # Non-indexed parameters
-    sender  = method_data[0]
+    # All addresses returned by the Etherscan API need to be converted to 
+    # checksummed addresses for use with the web3py library.    
+    sender  = to_checksum_address(remove_address_padding(method_data[0]))
     amount  = method_data[1]
     amount0 = method_data[2]
     amount1 = method_data[3]
@@ -93,7 +110,9 @@ def decode_burn(event):
     method_data = decode(burn_types, data_bytes)
 
     # Indexed paramters
-    owner      = int(event["topics"][1], 16)
+    # All addresses returned by the Etherscan API need to be converted to 
+    # checksummed addresses for use with the web3py library.    
+    owner      = to_checksum_address(remove_address_padding(event["topics"][1]))
     tick_lower = int(event["topics"][2][2:], 16)
     tick_upper = int(event["topics"][3][2:], 16)
 
@@ -121,8 +140,10 @@ def decode_swap(event):
     method_data = decode(swap_types, data_bytes)
 
     # Indexed paramters
-    sender    = int(event['topics'][1], 16)
-    recipient = int(event['topics'][2], 16)
+    # All addresses returned by the Etherscan API need to be converted to 
+    # checksummed addresses for use with the web3py library.    
+    sender    = to_checksum_address(remove_address_padding(event['topics'][1]))
+    recipient = to_checksum_address(remove_address_padding(event['topics'][2]))
 
     # Non-indexed parameters
     amount0       = method_data[0]

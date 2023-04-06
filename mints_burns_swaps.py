@@ -16,10 +16,10 @@
 #-----------------------------------------------------------------------
 
 
-import time
 import datetime
 import json
 import sys
+import time
 
 from utils.etherscan_requests import get_block_no_by_time, get_pool_logs
 from Crypto.Hash import keccak
@@ -76,8 +76,8 @@ def decode_mint(event):
     return {
         "sender": sender, 
         "owner": owner, 
-        "tick_lower": tick_lower, 
-        "tick_upper": tick_upper, 
+        "tickLower": tick_lower, 
+        "tickUpper": tick_upper, 
         "amount": amount, 
         "amount0": amount0, 
         "amount1": amount1
@@ -104,8 +104,8 @@ def decode_burn(event):
 
     return {
         "owner": owner, 
-        "tick_lower": tick_lower, 
-        "tick_upper": tick_upper, 
+        "tickLower": tick_lower, 
+        "tickUpper": tick_upper, 
         "amount": amount, 
         "amount0": amount, 
         "amount1": amount1
@@ -136,7 +136,7 @@ def decode_swap(event):
         "recipient": recipient, 
         "amount0": amount0, 
         "amount1": amount1, 
-        "sqrt_priceX96": sqrt_priceX96, 
+        "sqrtPriceX96": sqrt_priceX96, 
         "liquidity": liquidity, 
         "tick": tick
         }
@@ -168,11 +168,11 @@ def decode_uniswap_event(event):
         raise Exception("Error! Can only decode mint, burn and swap events.")
 
     return {
-        "block_no": block_no, 
+        "blockNo": block_no, 
         "timestamp": timestamp, 
-        "gas_price": gas_price, 
-        "gas_used": gas_used, 
-        "gas_total": gas_total, 
+        "gasPrice": gas_price, 
+        "gasUsed": gas_used, 
+        "gasTotal": gas_total, 
         "method": method, 
         "method_data": method_data
         }

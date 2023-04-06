@@ -74,7 +74,7 @@ def main():
         args = parse_args()
         decoded_events = json.load(open(args["path_to_decoded_events"], "r"))
         data = get_mint_burn_swap_gas_estimates(decoded_events["data"])
-        print(data)
+        print(json.dumps(data, indent = 4))
 
     except Exception as ex:
         print(ex, file=sys.stderr)

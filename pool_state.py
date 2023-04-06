@@ -20,25 +20,30 @@
 #-----------------------------------------------------------------------
 
 
+import datetime
 import json
 import math
 import sys
+import time
 
-from web3 import Web3
+from argparse import ArgumentParser
 from utils.uniswap_pool_abi import UNISWAP_POOL_ABI
+from utils.etherscan_requests import get_block_no_by_time
+from web3 import Web3
 
 
 #-----------------------------------------------------------------------
 
-
+MIN_TICK                  = -887272
+MAX_TICK                  = 887272
 DEFAULT_SURROUNDING_TICKS = 300
 INFURA_PROVIDER           = "https://mainnet.infura.io/v3/0c7d3f029eb34415866f7e943521f4ee"
 
 
 def get_pool_state(
         pool_address,
-        positions,
         block,
+        positions = [],
         surrounding_ticks = DEFAULT_SURROUNDING_TICKS,
         ):
     """ Fetches a pool's state at a given block.
@@ -90,14 +95,15 @@ def get_pool_state(
     current_tick_idx = pool_state["slot0"]["tick"]
     tick_spacing     = pool_state["tickSpacing"]
 
-    # The pools current tick isn't necessarily a tick that can actually be initialized.
-    # Only ticks that are divisible by tick_spacing can be initialized. So we need to
-    # find the nearest initializable tick using the tick spacing.
+    # The pools current tick isn't necessarily a tick that can actually be 
+    # initialized. Only ticks that are divisible by tick_spacing can be 
+    # initialized. So we need to find the nearest initializable tick using the 
+    # tick spacing.
     active_tick_idx = math.floor(current_tick_idx / tick_spacing) * tick_spacing
-        if active_tick_idx < MIN_TICK:
-            active_tick_idx = MIN_TICK
-        elif active_tick_idx > MAX_TICK: 
-            active_tick_idx = MAX_TICK
+    if active_tick_idx < MIN_TICK:
+        active_tick_idx = MIN_TICK
+    elif active_tick_idx > MAX_TICK: 
+        active_tick_idx = MAX_TICK
     
     # Fetch the array of oracle observations (observationCardinality is the 
     # max number of observations the observations array is currently configured
@@ -122,8 +128,9 @@ def get_pool_state(
 
     # Fetch the position information for the positions specified by the user
     position_indexed_state = {}
-    for position_key in position_addresses:
-        position = pool.functions.positions(position_key).call()
+    for position_key in positions:
+        # position_key_bytes = bytearray.fromhex(position_key)
+        position           = pool.functions.positions(position_key).call()
         position_indexed_state[position_key] = position
     pool_state["positions"] = position_indexed_state
 
@@ -134,26 +141,28 @@ def get_pool_state(
 def parse_args():
     """Parses the command-line arguments."""
 
-    description = """Uses web3py and the Uniswap v3 pool ABI to fetch a pool's state at a 
-        given block. The pool's state is returned as a dictionary containing 
-        the pool's slot0, fee growth global, protocol fees, liquidity and 
-        oracle observations. It contains part of the pool's tick-indexed state 
-        (specifically it contains 300 tick's worth of data on either side of 
-        the current tick at the specified block unless this value is overridden
-        by the user). It contains part of the pools position-indexed state 
-        (specifically it contains the information for each of the positions 
-        specified in the positions list provided by the user - the idea being 
-        that the user can provide the list of positions that were changed 
-        (mint/burn) over the testing period so that those mints and burns can 
-        be simulated)."""
+    description = """Uses web3py and the Uniswap v3 pool ABI to fetch a pool's 
+        state at a given block. The pool's state is returned as a dictionary 
+        containing the pool's slot0, fee growth global, protocol fees, 
+        liquidity and oracle observations. It contains part of the pool's 
+        tick-indexed state (specifically it contains 300 tick's worth of data 
+        on either side of the current tick at the specified block unless this 
+        value is overridden by the user). It contains part of the pools 
+        position-indexed state (specifically it contains the information for 
+        each of the positions specified in the positions list provided by the 
+        user - the idea being that the user can provide the list of positions 
+        that were changed (mint/burn) over the testing period so that those 
+        mints and burns can be simulated)."""
 
-    parser = ArgumentParser(
-        description="Fetches a pool's state at a given block.",
-        allow_abbrev=False)
-    parser.add_argument("pool_address", metavar = "pool address", type = str,
+    parser = ArgumentParser(description=description, allow_abbrev=False)
+    parser.add_argument("pool_address", type = str,
         help = "the address of the relevant Uniswap v3 pool")
-    parser.add_argument("block", metavar = "block", type = int,
-        help = "the block at which to fetch the pool's state")
+    parser.add_argument("date", type = str,
+        help = "the date at which to fetch the pool's state")
+    parser.add_argument("path_to_positions", type = str,
+        help = "path to a file containing positions")
+    parser.add_argument("surrounding_ticks", type = int,
+        help = "the number of ticks surrounding the current tick to fetch data for")
 
     args = parser.parse_args()
     return vars(args)
@@ -178,9 +187,12 @@ def main():
 
     try:
         args = parse_args()
-        data = fetch_uniswap_transactions_in_range(
-            args['pool_address'], args['start_date'], args['end_date'])
-        print(data)
+        positions = json.load(open(args["path_to_positions"], "r"))["data"]
+        timestamp = int(time.mktime(datetime.datetime.strptime(args["date"], "%d/%m/%Y").timetuple()))
+        block = get_block_no_by_time(timestamp, "before")
+        data = get_pool_state(
+            args['pool_address'], block, positions, args['surrounding_ticks'])
+        print(json.dumps(data, indent = 4))
 
     except Exception as ex:
         print(ex, file=sys.stderr)

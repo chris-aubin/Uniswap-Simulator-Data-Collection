@@ -54,6 +54,7 @@ swap_keccak.update(b"Swap(address,address,int256,int256,uint160,uint128,int24)")
 swap_hash  = "0x" + swap_keccak.hexdigest()
 swap_types = ["int256", "int256", "uint160", "uint128", "int24"]
 
+
 def remove_address_padding(address_padded):
     """Removes the padding from an address
     
@@ -67,6 +68,32 @@ def remove_address_padding(address_padded):
     address = "0x" + address
     return address
 
+
+def tick_hex_to_int(tick_hex):
+    """Converts a tick from hex to int
+    
+    Ticks are stored as 24-bit signed integers. Solidity uses big-endian two’s 
+    complement to represent signed ints. It left-pads negative signed ints with
+    fs, and positive signed ints with 0s. This function converts a tick from 
+    hex to int.
+
+    See more on solidity ABI encoding here:
+    https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#formal-specification-of-the-encoding
+    """
+
+    # If the tick is negative, remove the padding and convert to int
+    if tick_hex[3] == "f":
+        # Because ticks are 24-bit signed ints, the last 6 characters of the hex
+        # representation of the tick are the significant bits.
+        significant_bits = tick_hex[len(tick_hex)-5:]
+        tick = int(significant_bits, 16)
+        # 2^23 == 8388608
+        tick -= 8388608
+        return tick
+    else:
+        return int(tick_hex, 16)
+
+
 def decode_mint(event):
     """Decodes mint events """
 
@@ -79,8 +106,8 @@ def decode_mint(event):
     # All addresses returned by the Etherscan API need to be converted to 
     # checksummed addresses for use with the web3py library.    
     owner      = to_checksum_address(remove_address_padding(event["topics"][1]))
-    tick_lower = int(event["topics"][2][2:], 16)
-    tick_upper = int(event["topics"][3][2:], 16)
+    tick_lower = tick_hex_to_int(event["topics"][2][2:])
+    tick_upper = tick_hex_to_int(event["topics"][3][2:])
 
     # Non-indexed parameters
     # All addresses returned by the Etherscan API need to be converted to 
@@ -113,8 +140,8 @@ def decode_burn(event):
     # All addresses returned by the Etherscan API need to be converted to 
     # checksummed addresses for use with the web3py library.    
     owner      = to_checksum_address(remove_address_padding(event["topics"][1]))
-    tick_lower = int(event["topics"][2][2:], 16)
-    tick_upper = int(event["topics"][3][2:], 16)
+    tick_lower = tick_hex_to_int(event["topics"][2][2:])
+    tick_upper = tick_hex_to_int(event["topics"][3][2:])
 
     # Non-indexed parameters
     amount  = method_data[0]

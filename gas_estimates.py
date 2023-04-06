@@ -13,6 +13,7 @@
 
 
 import json
+import sys
 
 from argparse import ArgumentParser
 
@@ -72,7 +73,7 @@ def main():
     try:
         args = parse_args()
         decoded_events = json.load(open(args["path_to_decoded_events"], "r"))
-        data = get_relevant_addresses(decoded_events)
+        data = get_mint_burn_swap_gas_estimates(decoded_events["data"])
         print(data)
 
     except Exception as ex:

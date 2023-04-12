@@ -41,9 +41,9 @@ def get_relevant_positions(decoded_events):
             # https://github.com/Uniswap/v3-core/blob/d8b1c635c275d2a9450bd6a78f3fa2484fef73eb/contracts/libraries/Position.sol#L36
             # So we need to use the corresponding method from eth_abi:
             # https://eth-abi.readthedocs.io/en/latest/encoding.html
-            address   = to_checksum_address(event["method_data"]["owner"])
-            tickLower = event["method_data"]["tickLower"]
-            tickUpper = event["method_data"]["tickUpper"]
+            address   = to_checksum_address(event["methodData"]["owner"])
+            tickLower = event["methodData"]["tickLower"]
+            tickUpper = event["methodData"]["tickUpper"]
             key       = str(address) + str(tickLower) + str(tickUpper)
             position_key_encoded = encode_packed(["address", "int24", "int24"],
                 [address, tickLower, tickUpper])
@@ -90,7 +90,12 @@ def main():
     try:
         args = parse_args()
         decoded_events = json.load(open(args["path_to_decoded_events"], "r"))
-        data = get_relevant_positions(decoded_events["data"])
+        data = {}
+        posistion_data = get_relevant_positions(decoded_events["data"])
+        data["poolAddress"] = decoded_events["poolAddress"]
+        data["startDate"] = decoded_events["startDate"]
+        data["endDate"] = decoded_events["endDate"]
+        data["data"] = posistion_data
         print(json.dumps(data, indent = 4))
 
     except Exception as ex:

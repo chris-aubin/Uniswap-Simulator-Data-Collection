@@ -222,7 +222,7 @@ def decode_uniswap_event(event):
         "gasUsed": gas_used, 
         "gasTotal": gas_total, 
         "method": method, 
-        "method_data": method_data
+        "methodData": method_data
         }
 
 
@@ -279,8 +279,12 @@ def main():
     
     try:
         args = parse_args()
+        data = {}
         data = fetch_uniswap_transactions_in_range(
-            args['pool_address'], args['start_date'], args['end_date'])
+            args["pool_address"], args["start_date"], args["end_date"])
+        data["poolAddress"] = args["pool_address"]
+        data["startDate"] = args["start_date"]
+        data["endDate"] = args["end_date"]
         print(json.dumps(data, indent = 4))
 
     except Exception as ex:

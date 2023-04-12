@@ -43,7 +43,7 @@ INFURA_PROVIDER           = "https://mainnet.infura.io/v3/0c7d3f029eb34415866f7e
 def get_pool_state(
         pool_address,
         block,
-        positions = [],
+        positions,
         surrounding_ticks = DEFAULT_SURROUNDING_TICKS,
         ):
     """ Fetches a pool's state at a given block.
@@ -110,27 +110,58 @@ def get_pool_state(
     # to store)
     observations = []
     for i in range(pool_state["slot0"]["observationCardinality"]):
-        observations.append(pool.functions.observations(i).call())
+        observation = {}
+        observation_raw = pool.functions.observations(i).call()
+        observation["blockTimestamp"]                    = observation_raw[0]
+        observation["tickCumulative"]                    = observation_raw[1]
+        observation["secondsPerLiquidityCumulativeX128"] = observation_raw[2]
+        observation["initialized"]                       = observation_raw[3]
+        observations.append(observation)
     pool_state["observations"] = observations
 
     # Fetch the tick information for the specified number of ticks above 
     # and below the current tick. 
     tick_indexed_state = {}
-    tick = active_tick_idx
+    tick_idx = active_tick_idx
     for i in range(1, DEFAULT_SURROUNDING_TICKS):
-        tick                     += i*tick_spacing
-        tick_indexed_state[tick] = pool.functions.ticks(tick).call()
-    tick = active_tick_idx
+        tick                                   = {}
+        tick_idx                               += i*tick_spacing
+        tick_raw                               = pool.functions.ticks(tick_idx).call()
+        tick["LiquidityGross"]                 = tick_raw[0]
+        tick["LiquidityNet"]                   = tick_raw[1]
+        tick["FeeGrowthOutside0X128"]          = tick_raw[2]
+        tick["FeeGrowthOutside1X128"]          = tick_raw[3]
+        tick["tickCumulativeOutside"]          = tick_raw[4]
+        tick["secondsPerLiquidityOutsideX128"] = tick_raw[5]
+        tick["secondsOutside"]                 = tick_raw[6]
+        tick["initialized"]                    = tick_raw[7]
+        tick_indexed_state[tick_idx]           = tick
+    tick_idx = active_tick_idx
     for i in range(1, DEFAULT_SURROUNDING_TICKS):
-        tick                     -= i*tick_spacing
-        tick_indexed_state[tick] = pool.functions.ticks(tick).call()
+        tick                                   = {}
+        tick_idx                               -= i*tick_spacing
+        tick_raw                               = pool.functions.ticks(tick_idx).call()
+        tick["LiquidityGross"]                 = tick_raw[0]
+        tick["LiquidityNet"]                   = tick_raw[1]
+        tick["FeeGrowthOutside0X128"]          = tick_raw[2]
+        tick["FeeGrowthOutside1X128"]          = tick_raw[3]
+        tick["tickCumulativeOutside"]          = tick_raw[4]
+        tick["secondsPerLiquidityOutsideX128"] = tick_raw[5]
+        tick["secondsOutside"]                 = tick_raw[6]
+        tick["initialized"]                    = tick_raw[7]
+        tick_indexed_state[tick_idx]           = tick
     pool_state["ticks"] = tick_indexed_state
 
     # Fetch the position information for the positions specified by the user
     position_indexed_state = {}
     for position_key in positions.values():
-        # position_key_bytes = bytearray.fromhex(position_key)
-        position           = pool.functions.positions(position_key).call()
+        position                             = {}
+        position_raw                         = pool.functions.positions(position_key).call()
+        position["liquidity"]                = position_raw[0]
+        position["feeGrowthInside0LastX128"] = position_raw[1]
+        position["feeGrowthInside1LastX128"] = position_raw[2]
+        position["tokensOwed0"]              = position_raw[3]
+        position["tokensOwed1"]              = position_raw[4]
         position_indexed_state[position_key] = position
     pool_state["positions"] = position_indexed_state
 
@@ -189,9 +220,13 @@ def main():
         args = parse_args()
         positions = json.load(open(args["path_to_positions"], "r"))
         timestamp = int(time.mktime(datetime.datetime.strptime(args["date"], "%d/%m/%Y").timetuple()))
-        block = get_block_no_by_time(timestamp, "before")
-        data = get_pool_state(
-            args['pool_address'], block, positions, args['surrounding_ticks'])
+        block = get_block_no_by_time(timestamp, "after")
+        data = {}
+        pool_state = get_pool_state(
+            args["pool_address"], block, positions["data"], args["surrounding_ticks"])
+        data["poolAddress"] = args["pool_address"]
+        data["block"] = block
+        data["data"] = pool_state
         print(json.dumps(data, indent = 4))
 
     except Exception as ex:

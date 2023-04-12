@@ -30,13 +30,13 @@ def get_mint_burn_swap_gas_estimates(decoded_events):
 
     for event in decoded_events:
         if event["method"] == "MINT":
-            mint_av    += event["gas_used"]
+            mint_av    += event["gasUsed"]
             mint_count += 1
         elif event["method"] == "BURN":
-            burn_av    += event["gas_used"]
+            burn_av    += event["gasUsed"]
             burn_count += 1
         elif event["method"] == "SWAP":
-            swap_av    += event["gas_used"]
+            swap_av    += event["gasUsed"]
             swap_count += 1
 
     mint_av = mint_av / mint_count
@@ -72,7 +72,12 @@ def main():
     try:
         args = parse_args()
         decoded_events = json.load(open(args["path_to_decoded_events"], "r"))
-        data = get_mint_burn_swap_gas_estimates(decoded_events["data"])
+        gas_estimates = get_mint_burn_swap_gas_estimates(decoded_events["data"])
+        data = {}
+        data["poolAddress"] = decoded_events["poolAddress"]
+        data["startDate"] = decoded_events["startDate"]
+        data["endDate"] = decoded_events["endDate"]
+        data["data"] = gas_estimates
         print(json.dumps(data, indent = 4))
 
     except Exception as ex:

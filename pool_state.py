@@ -28,7 +28,7 @@ import time
 
 from argparse import ArgumentParser
 from utils.uniswap_pool_abi import UNISWAP_POOL_ABI
-from utils.etherscan_requests import get_block_no_by_time
+from utils.etherscan_requests import get_block_no_by_time, get_contract_abi
 from web3 import Web3
 
 
@@ -70,12 +70,16 @@ def get_pool_state(
                              tick to fetch data for (default 300)
     """
 
+    pool_address_checksummed = Web3.to_checksum_address(pool_address)
     # Initialize web3 and the pool contract
-    w3   = Web3(Web3.HTTPProvider(INFURA_PROVIDER))
-    pool = w3.eth.contract(address=Web3.to_checksum_address(pool_address), abi=UNISWAP_POOL_ABI)
+    w3                   = Web3(Web3.HTTPProvider(INFURA_PROVIDER))
+    w3.eth.default_block = block
+    pool                 = w3.eth.contract(address = pool_address_checksummed, abi = UNISWAP_POOL_ABI)
 
     # Fetch the pool's state by calling the getters that solidity generates
     # automatically for each public state variable.
+    token0_address         = Web3.to_checksum_address(pool.functions.token0().call())
+    token1_address         = Web3.to_checksum_address(pool.functions.token1().call())
     fee_growth_global0X128 = pool.functions.feeGrowthGlobal0X128().call()
     fee_growth_global1X128 = pool.functions.feeGrowthGlobal1X128().call()
     protocol_fees_raw      = pool.functions.protocolFees().call()
@@ -88,6 +92,8 @@ def get_pool_state(
     protocol_fees["token1"] = protocol_fees_raw[1]
 
     pool_state = {
+        "token0":               token0_address,
+        "token1":               token1_address,
         "tickSpacing":          tick_spacing,
         "feeGrowthGlobal0X128": fee_growth_global0X128,
         "feeGrowthGlobal1X128": fee_growth_global1X128,
@@ -96,13 +102,24 @@ def get_pool_state(
         "slot0":                {"sqrtPriceX96": slot0[0], "tick": slot0[1], "observationIndex": slot0[2], "observationCardinality": slot0[3], "feeProtocol": slot0[4]}
     }
 
-    current_tick_idx = pool_state["slot0"]["tick"]
-    tick_spacing     = pool_state["tickSpacing"]
+    # Fetch the pool's token0 balance
+    token0_abi             = get_contract_abi(token0_address)
+    token0                 = w3.eth.contract(address=token0_address, abi=token0_abi)
+    balance_token0         = token0.functions.balanceOf(pool_address_checksummed).call()
+    pool_state["balance0"] = balance_token0
+
+    # Fetch the pool's token1 balance
+    token1_abi             = get_contract_abi(token1_address)
+    token1                 = w3.eth.contract(address=token1_address, abi=token1_abi)
+    balance_token1         = token1.functions.balanceOf(pool_address_checksummed).call()
+    pool_state["balance1"] = balance_token1
 
     # The pools current tick isn't necessarily a tick that can actually be 
     # initialized. Only ticks that are divisible by tick_spacing can be 
     # initialized. So we need to find the nearest initializable tick using the 
     # tick spacing.
+    current_tick_idx = pool_state["slot0"]["tick"]
+    tick_spacing     = pool_state["tickSpacing"]
     active_tick_idx = math.floor(current_tick_idx / tick_spacing) * tick_spacing
     if active_tick_idx < MIN_TICK:
         active_tick_idx = MIN_TICK

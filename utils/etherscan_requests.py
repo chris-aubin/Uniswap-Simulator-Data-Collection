@@ -84,3 +84,30 @@ def get_pool_logs(address, from_block, to_block, page = 1):
         raise Exception("Error! No logs found. Likely incorrect address.")
     else:
         return response_json["result"]
+
+
+def get_contract_abi(address):
+    """Gets the ABI for a particular contract address.
+
+    Uses the Etherscan API to fetch the ABI for a particular contract 
+    address. The endpoint's documentation can be found here:
+    https://docs.etherscan.io/api-endpoints/contracts#get-contract-abi
+    
+    Keyword arguments:
+    address -- the address of the contract to fetch the ABI for
+    """
+
+    params = {  
+        "module":  "contract",  
+        "action":  "getabi",
+        "address": address,  
+        "apikey":  ETHERSCAN_API_KEY,  
+    }  
+
+    response      = requests.get(ETHERSCAN_API_ENDPOINT, params = params)
+    response_json = json.loads(response.text)
+    
+    if response_json["message"] != "OK":
+        raise Exception("Error! No ABI found. Likely incorrect address.")
+    else:
+        return response_json["result"]

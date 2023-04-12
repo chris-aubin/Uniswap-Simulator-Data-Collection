@@ -78,10 +78,14 @@ def get_pool_state(
     # automatically for each public state variable.
     fee_growth_global0X128 = pool.functions.feeGrowthGlobal0X128().call()
     fee_growth_global1X128 = pool.functions.feeGrowthGlobal1X128().call()
-    protocol_fees          = pool.functions.protocolFees().call()
+    protocol_fees_raw      = pool.functions.protocolFees().call()
     liquidity              = pool.functions.liquidity().call()
     slot0                  = pool.functions.slot0().call()
     tick_spacing           = pool.functions.tickSpacing().call()
+
+    protocol_fees = {}
+    protocol_fees["token0"] = protocol_fees_raw[0]
+    protocol_fees["token1"] = protocol_fees_raw[1]
 
     pool_state = {
         "tickSpacing":          tick_spacing,

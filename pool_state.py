@@ -80,12 +80,15 @@ def get_pool_state(
     # automatically for each public state variable.
     token0_address         = Web3.to_checksum_address(pool.functions.token0().call())
     token1_address         = Web3.to_checksum_address(pool.functions.token1().call())
+    fee                    = pool.functions.fee().call()
+    tick_spacing           = pool.functions.tickSpacing().call()
+    maxLiquidityPerTick    = pool.functions.maxLiquidityPerTick().call()
     fee_growth_global0X128 = pool.functions.feeGrowthGlobal0X128().call()
     fee_growth_global1X128 = pool.functions.feeGrowthGlobal1X128().call()
     protocol_fees_raw      = pool.functions.protocolFees().call()
     liquidity              = pool.functions.liquidity().call()
     slot0                  = pool.functions.slot0().call()
-    tick_spacing           = pool.functions.tickSpacing().call()
+    
 
     protocol_fees = {}
     protocol_fees["token0"] = protocol_fees_raw[0]
@@ -94,7 +97,9 @@ def get_pool_state(
     pool_state = {
         "token0":               token0_address,
         "token1":               token1_address,
+        "fee":                  fee,
         "tickSpacing":          tick_spacing,
+        "maxLiquidityPerTick":  maxLiquidityPerTick,
         "feeGrowthGlobal0X128": fee_growth_global0X128,
         "feeGrowthGlobal1X128": fee_growth_global1X128,
         "protocolFees":         protocol_fees,

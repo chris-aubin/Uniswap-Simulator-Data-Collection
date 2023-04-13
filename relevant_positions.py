@@ -41,9 +41,9 @@ def get_relevant_positions(decoded_events):
             # https://github.com/Uniswap/v3-core/blob/d8b1c635c275d2a9450bd6a78f3fa2484fef73eb/contracts/libraries/Position.sol#L36
             # So we need to use the corresponding method from eth_abi:
             # https://eth-abi.readthedocs.io/en/latest/encoding.html
-            address   = to_checksum_address(event["methodData"]["owner"])
-            tickLower = event["methodData"]["tickLower"]
-            tickUpper = event["methodData"]["tickUpper"]
+            address   = to_checksum_address(event["owner"])
+            tickLower = event["tickLower"]
+            tickUpper = event["tickUpper"]
             key       = str(address) + str(tickLower) + str(tickUpper)
             position_key_encoded = encode_packed(["address", "int24", "int24"],
                 [address, tickLower, tickUpper])

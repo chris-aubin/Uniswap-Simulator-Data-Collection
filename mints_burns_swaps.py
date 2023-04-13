@@ -215,15 +215,17 @@ def decode_uniswap_event(event):
     else:
         raise Exception("Error! Can only decode mint, burn and swap events.")
 
-    return {
+    event = {
         "blockNo": block_no, 
         "timestamp": timestamp, 
         "gasPrice": gas_price, 
         "gasUsed": gas_used, 
         "gasTotal": gas_total, 
-        "method": method, 
-        "methodData": method_data
+        "method": method
         }
+    event.update(method_data)
+
+    return event
 
 
 def fetch_uniswap_transactions_in_range(pool_address, start_date, end_date):

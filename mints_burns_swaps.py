@@ -251,7 +251,7 @@ def fetch_uniswap_transactions_in_range(pool_address, start_date, end_date):
         if event["topics"][0] in [mint_hash, burn_hash, swap_hash]:
             decoded_transactions.append(decode_uniswap_event(event))
     
-    return {"data": decoded_transactions}
+    return {"data": decoded_transactions}, start_block, end_block
 
 
 def parse_args():
@@ -282,11 +282,13 @@ def main():
     try:
         args = parse_args()
         data = {}
-        data = fetch_uniswap_transactions_in_range(
+        data, start_block, end_block = fetch_uniswap_transactions_in_range(
             args["pool_address"], args["start_date"], args["end_date"])
         data["poolAddress"] = args["pool_address"]
         data["startDate"] = args["start_date"]
         data["endDate"] = args["end_date"]
+        data["startBlock"] = start_block
+        data["endBlock"] = end_block
         print(json.dumps(data, indent = 4))
 
     except Exception as ex:

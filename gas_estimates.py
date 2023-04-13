@@ -77,6 +77,8 @@ def main():
         data["poolAddress"] = decoded_events["poolAddress"]
         data["startDate"] = decoded_events["startDate"]
         data["endDate"] = decoded_events["endDate"]
+        data["startBlock"] = decoded_events["startBlock"]
+        data["endBlock"] = decoded_events["endBlock"]
         data["data"] = gas_estimates
         print(json.dumps(data, indent = 4))
 

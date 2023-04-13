@@ -216,6 +216,9 @@ def parse_args():
         help = "the address of the relevant Uniswap v3 pool")
     parser.add_argument("date", type = str,
         help = "the date at which to fetch the pool's state")
+    parser.add_argument("before", type = str,
+        help = """should the state be fetched before or after the specified 
+                date (accepts 'before' or 'after')""")
     parser.add_argument("path_to_positions", type = str,
         help = "path to a file containing positions")
     parser.add_argument("surrounding_ticks", type = int,
@@ -246,7 +249,10 @@ def main():
         args = parse_args()
         positions = json.load(open(args["path_to_positions"], "r"))
         timestamp = int(time.mktime(datetime.datetime.strptime(args["date"], "%d/%m/%Y").timetuple()))
-        block = get_block_no_by_time(timestamp, "after")
+        if args["before"] in ["before", "after"]:
+            block = get_block_no_by_time(timestamp, args["before"])
+        else:
+            raise Exception("The before argument must be either 'before' or 'after'")
         data = {}
         pool_state = get_pool_state(
             args["pool_address"], block, positions["data"], args["surrounding_ticks"])

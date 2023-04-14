@@ -135,9 +135,9 @@ def get_pool_state(
     # and below the current tick. 
     tick_indexed_state = {}
     tick_idx = active_tick_idx
-    for i in range(1, DEFAULT_SURROUNDING_TICKS):
+    for i in range(0, DEFAULT_SURROUNDING_TICKS):
         tick                                   = {}
-        tick_idx                               += i*tick_spacing
+        tick_idx                               += tick_spacing
         tick_raw                               = pool.functions.ticks(tick_idx).call()
         tick["LiquidityGross"]                 = tick_raw[0]
         tick["LiquidityNet"]                   = tick_raw[1]
@@ -151,7 +151,7 @@ def get_pool_state(
     tick_idx = active_tick_idx
     for i in range(1, DEFAULT_SURROUNDING_TICKS):
         tick                                   = {}
-        tick_idx                               -= i*tick_spacing
+        tick_idx                               -= tick_spacing
         tick_raw                               = pool.functions.ticks(tick_idx).call()
         tick["LiquidityGross"]                 = tick_raw[0]
         tick["LiquidityNet"]                   = tick_raw[1]

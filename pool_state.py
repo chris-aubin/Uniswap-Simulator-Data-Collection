@@ -130,20 +130,6 @@ def get_pool_state(
         active_tick_idx = MIN_TICK
     elif active_tick_idx > MAX_TICK: 
         active_tick_idx = MAX_TICK
-    
-    # Fetch the array of oracle observations (observationCardinality is the 
-    # max number of observations the observations array is currently configured
-    # to store)
-    observations = []
-    for i in range(pool_state["slot0"]["observationCardinality"]):
-        observation = {}
-        observation_raw = pool.functions.observations(i).call()
-        observation["blockTimestamp"]                    = observation_raw[0]
-        observation["tickCumulative"]                    = observation_raw[1]
-        observation["secondsPerLiquidityCumulativeX128"] = observation_raw[2]
-        observation["initialized"]                       = observation_raw[3]
-        observations.append(observation)
-    pool_state["observations"] = observations
 
     # Fetch the tick information for the specified number of ticks above 
     # and below the current tick. 
@@ -190,6 +176,20 @@ def get_pool_state(
         position["tokensOwed1"]              = position_raw[4]
         position_indexed_state[position_key] = position
     pool_state["positions"] = position_indexed_state
+
+    # Fetch the array of oracle observations (observationCardinality is the 
+    # max number of observations the observations array is currently configured
+    # to store)
+    observations = []
+    for i in range(pool_state["slot0"]["observationCardinality"]):
+        observation = {}
+        observation_raw = pool.functions.observations(i).call()
+        observation["blockTimestamp"]                    = observation_raw[0]
+        observation["tickCumulative"]                    = observation_raw[1]
+        observation["secondsPerLiquidityCumulativeX128"] = observation_raw[2]
+        observation["initialized"]                       = observation_raw[3]
+        observations.append(observation)
+    pool_state["observations"] = observations
 
     return pool_state
     

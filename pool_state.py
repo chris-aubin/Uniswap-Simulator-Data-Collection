@@ -38,6 +38,7 @@ MIN_TICK                  = -887272
 MAX_TICK                  = 887272
 DEFAULT_SURROUNDING_TICKS = 300
 INFURA_PROVIDER           = "https://mainnet.infura.io/v3/0c7d3f029eb34415866f7e943521f4ee"
+ALCHEMY_PROVIDER          = "https://eth-mainnet.g.alchemy.com/v2/i4BOJTCOAoEk1zdtSYu1ewkc_c-8eo7O"
 
 
 def get_pool_state(
@@ -72,7 +73,8 @@ def get_pool_state(
 
     pool_address_checksummed = Web3.to_checksum_address(pool_address)
     # Initialize web3 and the pool contract
-    w3                   = Web3(Web3.HTTPProvider(INFURA_PROVIDER))
+    # w3                   = Web3(Web3.HTTPProvider(INFURA_PROVIDER))
+    w3                   = Web3(Web3.HTTPProvider(ALCHEMY_PROVIDER))
     w3.eth.default_block = block
     pool                 = w3.eth.contract(address = pool_address_checksummed, abi = UNISWAP_POOL_ABI)
 

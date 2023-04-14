@@ -166,7 +166,8 @@ def get_pool_state(
 
     # Fetch the position information for the positions specified by the user
     position_indexed_state = {}
-    for position_key in positions.values():
+    for position_key_unhashed in positions:
+        position_key                         = positions[position_key_unhashed]
         position                             = {}
         position_raw                         = pool.functions.positions(position_key).call()
         position["liquidity"]                = position_raw[0]
@@ -174,7 +175,8 @@ def get_pool_state(
         position["feeGrowthInside1LastX128"] = position_raw[2]
         position["tokensOwed0"]              = position_raw[3]
         position["tokensOwed1"]              = position_raw[4]
-        position_indexed_state[position_key] = position
+
+        position_indexed_state[position_key_unhashed] = position
     pool_state["positions"] = position_indexed_state
 
     # Fetch the array of oracle observations (observationCardinality is the 

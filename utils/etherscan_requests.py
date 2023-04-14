@@ -81,7 +81,7 @@ def get_pool_logs(address, from_block, to_block, page = 1):
     response_json = json.loads(response.text)
     
     if response_json["message"] != "OK":
-        raise Exception("Error! No logs found. Likely incorrect address.")
+        return None
     else:
         return response_json["result"]
 

@@ -281,7 +281,17 @@ def fetch_uniswap_transactions_in_range(pool_address, start_date, end_date):
     start_block = get_block_no_by_time(start_timestamp, "after")
     end_block   = get_block_no_by_time(end_timestamp, "before")
 
-    logs = get_pool_logs(pool_address, start_block, end_block)
+    logs = []
+    new_results = True
+    page = 1
+
+    while new_results:
+        response = get_pool_logs(pool_address, start_block, end_block, page)
+        if response == None:
+            new_results = False
+            break
+        logs += response
+        page += 1
 
     decoded_transactions = []
 

@@ -155,10 +155,10 @@ def get_pool_state(
         tick                                   = {}
         tick_idx                               -= tick_spacing
         tick_raw                               = pool.functions.ticks(tick_idx).call()
-        tick["LiquidityGross"]                 = tick_raw[0]
-        tick["LiquidityNet"]                   = tick_raw[1]
-        tick["FeeGrowthOutside0X128"]          = tick_raw[2]
-        tick["FeeGrowthOutside1X128"]          = tick_raw[3]
+        tick["liquidityGross"]                 = tick_raw[0]
+        tick["liquidityNet"]                   = tick_raw[1]
+        tick["feeGrowthOutside0X128"]          = tick_raw[2]
+        tick["feeGrowthOutside1X128"]          = tick_raw[3]
         tick["tickCumulativeOutside"]          = tick_raw[4]
         tick["secondsPerLiquidityOutsideX128"] = tick_raw[5]
         tick["secondsOutside"]                 = tick_raw[6]

@@ -1,6 +1,7 @@
 """ Plots a pool's liquidity.
 
-    Plots the liquidity for a given pool state (using output of pool_state.py).
+    Plots the liquidity per tick for a given pool state (using output of 
+    pool_state.py).
 """
 
 

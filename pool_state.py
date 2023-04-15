@@ -1,7 +1,7 @@
 """ Fetches a pool's state at a given block.
 
     Uses web3py and the Uniswap v3 pool ABI to fetch a pool's state at a given
-    block. The pool's state is returned as a dictionary containing the pool's
+    date. The pool's state is returned as a dictionary containing the pool's
     slot0, fee growth global, protocol fees, liquidity and oracle observations.
     It contains part of the pool's tick-indexed state (specifically it contains 
     300 tick's worth of data on either side of the current tick at the 

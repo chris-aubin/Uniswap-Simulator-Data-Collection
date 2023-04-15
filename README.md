@@ -7,6 +7,23 @@ This repo contains the scripts that were used to collect the data necessary to b
 ## transactions.py
 This module fetches all of a pools mint, burn, swap, flash and collect events . It uses the Etherscan API (https://docs.etherscan.io). Etherscan is the leading blockchain explorer, search, API and analytics platform for Ethereum. It also uses the PyCryptodome library (https://www.pycryptodome.org) for computing keccak hashes. It also uses the eth_abi package (https://eth-abi.readthedocs.io/en/latest/index.html) and the eth_utils packages(https://eth-utils.readthedocs.io/en/stable/) to decode events and compute the checksum (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md) for addresses. Both packages are used internally by web3py.
 
+Events are emitted as part of the Ethereum logging/ event-watching protocol. Log entries from emitted events provide information about the function that emitted the event. Events contain the following information:
+  - `address` is the address of the contract
+  - `topics` is an array containing the following:
+    - `topics[0]` is `keccak(EVENT_NAME + "(" + EVENT_ARGS.map(canonical_type_of).join(",") + ")")` 
+      - `canonical_type_of` is a function that simply returns the canonical type of a given argument, e.g. for uint indexed foo, it would return uint256). 
+      - If the event is declared as anonymous the topics[0] is not generated.
+    - `topics[n]` is `EVENT_INDEXED_ARGS[n - 1]` 
+      - `EVENT_INDEXED_ARGS` is the series of `EVENT_ARGS` that are indexed
+      - Up to 3 event arguments can be indexed. The indexed arguments are chosen by the engineer when the event is defined.
+  - `data`: `abi_serialise(EVENT_NON_INDEXED_ARGS)` 
+    - `EVENT_NON_INDEXED_ARGS` is the series of `EVENT_ARGS` that are not indexed
+    -  `abi_serialise` is the ABI serialisation function used for returning a series of typed values from a function, as per the specification [here](https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#formal-specification-of-the-encoding)
+
+
+
+Read more about Ethereum events [here](https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#events) and read more about the formal encoding of Ethereum events [here](https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#formal-specification-of-the-encoding).
+
 #### Usage
 
 ## gas_estimates.py

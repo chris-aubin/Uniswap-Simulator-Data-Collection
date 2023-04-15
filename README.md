@@ -39,6 +39,8 @@ Given a json object containing mints/burns/swaps (typically those for a particul
 ## pool_state.py
 Uses web3py and the Uniswap v3 pool ABI to fetch a pool's state at a given date. The pool's state is returned as a dictionary containing the pool's slot0, fee growth global, protocol fees, liquidity and oracle observations. It contains part of the pool's tick-indexed state (specifically it contains 300 tick's worth of data on either side of the current tick at the specified block unless this value is overridden by the user). It contains part of the pools position-indexed state (specifically it contains the information for each of the positions specified in the positions list provided by the user - the idea being that the user can provide the list of positions that were changed (mint/burn) over the testing period so that those mints and burns can be simulated).
 
+**N.B. This calls `balanceOf()` for `token0` and `token1` to determine the pool's balance of each token. Not all ERC20 tokens have a `balanceOf()` method (notably USDC does not have a `balanceOf()` method), and for pools containing those tokens this script will not work. It also will not work for ERC20 tokens that cannot be found on the list of Etherscan verified contracts, found [here](https://etherscan.io/contractsVerified).* 
+
 #### Usage
 
 ## plot_liquidity.py

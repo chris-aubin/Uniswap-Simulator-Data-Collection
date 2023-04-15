@@ -1,12 +1,15 @@
-""" Fetches a pool's mints, burns and swaps using Etherscan API
+""" Fetches a pool's mint, burn, swap, flash and collect events using Etherscan API
 
-    This module fetches all events that change the liquidity of a particular 
-    pool. It uses the Etherscan API (https://docs.etherscan.io). Etherscan is 
-    the leading blockchain explorer, search, API and analytics platform for 
+    This module fetches all of a pools mint, burn, swap, flash and collect 
+    events . It uses the Etherscan API (https://docs.etherscan.io). Etherscan 
+    is the leading blockchain explorer, search, API and analytics platform for 
     Ethereum. It also uses the PyCryptodome library 
     (https://www.pycryptodome.org) for computing keccak hashes. It also uses 
     the eth_abi package (https://eth-abi.readthedocs.io/en/latest/index.html) 
-    that is used internally by web3py.
+    and the eth_utils packages(https://eth-utils.readthedocs.io/en/stable/) 
+    to decode events and compute the checksum 
+    (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md) for 
+    addresses. Both packages are used internally by web3py.
 """
 
 
@@ -39,25 +42,73 @@ from utils.etherscan_requests import get_block_no_by_time, get_pool_logs
 # 2) Store an array of the function's non-indexed parameters
 #    This can be used to decode the data field in the event log using the 
 #    eth_abi decode function. 
+
+# event Mint(
+#     address sender,
+#     address indexed owner,
+#     int24 indexed tickLower,
+#     int24 indexed tickUpper,
+#     uint128 amount,
+#     uint256 amount0,
+#     uint256 amount1
+# );
 mint_keccak = keccak.new(digest_bits = 256)
 mint_keccak.update(b"Mint(address,address,int24,int24,uint128,uint256,uint256)")
 mint_hash  = "0x" + mint_keccak.hexdigest()
 mint_types = ["address", "uint128", "uint256", "uint256"]
 
+# event Burn(
+#     address indexed owner,
+#     int24 indexed tickLower,
+#     int24 indexed tickUpper,
+#     uint128 amount,
+#     uint256 amount0,
+#     uint256 amount1
+# );
 burn_keccak = keccak.new(digest_bits = 256)
 burn_keccak.update(b"Burn(address,int24,int24,uint128,uint256,uint256)")
 burn_hash  = "0x" + burn_keccak.hexdigest()
 burn_types = ["uint128", "uint256", "uint256"]
 
+# event Swap(
+#     address indexed sender,
+#     address indexed recipient,
+#     int256 amount0,
+#     int256 amount1,
+#     uint160 sqrtPriceX96,
+#     uint128 liquidity,
+#     int24 tick
+# );
 swap_keccak = keccak.new(digest_bits = 256)
 swap_keccak.update(b"Swap(address,address,int256,int256,uint160,uint128,int24)")
 swap_hash  = "0x" + swap_keccak.hexdigest()
 swap_types = ["int256", "int256", "uint160", "uint128", "int24"]
 
+# event Flash(
+#     address indexed sender,
+#     address indexed recipient,
+#     uint256 amount0,
+#     uint256 amount1,
+#     uint256 paid0,
+#     uint256 paid1
+# );
 flash_keccak = keccak.new(digest_bits = 256)
 flash_keccak.update(b"Flash(address,address,uint256,uint256,uint256,uint256)")
 flash_hash  = "0x" + flash_keccak.hexdigest()
 flash_types = ["uint256", "uint256", "uint256", "uint256"]
+
+# event Collect(
+#     address indexed owner,
+#     address recipient,
+#     int24 indexed tickLower,
+#     int24 indexed tickUpper,
+#     uint128 amount0,
+#     uint128 amount1
+# );
+collect_keccak = keccak.new(digest_bits = 256)
+collect_keccak.update(b"Flash(address,address,int24,int24,uint128,uint128)")
+collect_hash  = "0x" + collect_keccak.hexdigest()
+collect_types = ["address", "uint128", "uint128"]
 
 
 def remove_address_padding(address_padded):
@@ -196,7 +247,11 @@ def decode_swap(event):
 
 
 def decode_flash(event):
-    """Decodes flash events"""
+    """Decodes flash events
+    
+    The pool charges a fee for flash swaps. This fee is paid to the pool and to
+    liquidity providers, so while flashes do not affect liquidity, they do
+    affect the fees collected by liquidity providers."""
 
     # Use the eth_abi package to decode the data field in the event log
     # using the non-indexed parameters of the swap function
@@ -225,6 +280,47 @@ def decode_flash(event):
         }
 
 
+# event Collect(
+#     address indexed owner,
+#     address recipient,
+#     int24 indexed tickLower,
+#     int24 indexed tickUpper,
+#     uint128 amount0,
+#     uint128 amount1
+# );
+def decode_collect(event):
+    """Decodes collect events
+    
+    Collect events do not affect liquidity, but they do cost gas so we need to
+    collect them to estimate the gas cost of collecting fees."""
+
+    # Use the eth_abi package to decode the data field in the event log
+    # using the non-indexed parameters of the swap function
+    data_bytes  = bytes.fromhex(event['data'][2:])
+    method_data = decode(collect_types, data_bytes)
+
+    # Indexed paramters
+    # All addresses returned by the Etherscan API need to be converted to 
+    # checksummed addresses for use with the web3py library.    
+    owner      = to_checksum_address(remove_address_padding(event["topics"][1]))
+    tick_lower = tick_hex_to_int(event["topics"][2][2:])
+    tick_upper = tick_hex_to_int(event["topics"][3][2:])
+
+    # Non-indexed parameters
+    recipient = method_data[0]
+    amount0   = method_data[1]
+    amount1   = method_data[2]
+
+    return {
+        "owner": owner, 
+        "tickLower": tick_lower, 
+        "tickUpper": tick_upper, 
+        "recipient": recipient, 
+        "amount0": amount0, 
+        "amount1": amount1, 
+        }
+
+
 def decode_uniswap_event(event):
     """Decodes Uniswap event logs"""
 
@@ -250,6 +346,9 @@ def decode_uniswap_event(event):
     elif (event["topics"][0]) == flash_hash:
         method      = "FLASH"
         method_data = decode_flash(event)
+    elif (event["topics"][0]) == collect_hash:
+        method      = "COLLECT"
+        method_data = decode_collect(event)
     else:
         raise Exception("Error! Can only decode mint, burn and swap events.")
 
@@ -296,7 +395,7 @@ def fetch_uniswap_transactions_in_range(pool_address, start_date, end_date):
     decoded_transactions = []
 
     for event in logs:
-        if event["topics"][0] in [mint_hash, burn_hash, swap_hash, flash_hash]:
+        if event["topics"][0] in [mint_hash, burn_hash, swap_hash, flash_hash, collect_hash]:
             decoded_transactions.append(decode_uniswap_event(event))
     
     return {"data": decoded_transactions}, start_block, end_block
@@ -306,7 +405,8 @@ def parse_args():
     """Parses the command-line arguments."""
 
     description = """Given a pool's address and a start and end date, fetches 
-    the pool's mints, burns and swaps in the date range using Etherscan API."""
+        the pool's mint, burn, swap, flash and collect events emitted in the 
+        date range using Etherscan API."""
 
     parser = ArgumentParser(description = description, allow_abbrev = False)
     parser.add_argument("pool_address", type = str,
@@ -321,10 +421,11 @@ def parse_args():
 
 
 def main():
-    """Prints the mint/burns/swaps for a uniswap pool.
+    """Prints the mint/burn/swap/flash/collect events for a uniswap pool.
     
-    Given a pool's address and a start and end date, fetches the pool's mints, 
-    burns and swaps in the date range using Etherscan API.
+    Given a pool's address and a start and end date, fetches the pool's mint, 
+    burn, swap, flash and collect events emitted in the date range using 
+    Etherscan API.
     """
     
     try:

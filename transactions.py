@@ -1,13 +1,14 @@
 """ Fetches a pool's mint, burn, swap, flash and collect events using Etherscan API
 
     This module fetches all of a pools mint, burn, swap, flash and collect 
-    events . It uses the Etherscan API (https://docs.etherscan.io). Etherscan 
-    is the leading blockchain explorer, search, API and analytics platform for 
-    Ethereum. It also uses the PyCryptodome library 
-    (https://www.pycryptodome.org) for computing keccak hashes. It also uses 
-    the eth_abi package (https://eth-abi.readthedocs.io/en/latest/index.html) 
-    and the eth_utils packages(https://eth-utils.readthedocs.io/en/stable/) 
-    to decode events and compute the checksum 
+    events. The events are printed as a JSON object. It uses the Etherscan API 
+    (https://docs.etherscan.io). Etherscan is the leading blockchain explorer, 
+    search, API and analytics platform for Ethereum. It also uses the 
+    PyCryptodome library (https://www.pycryptodome.org) for computing keccak 
+    hashes. It also uses the eth_abi package 
+    (https://eth-abi.readthedocs.io/en/latest/index.html) and the eth_utils 
+    packages (https://eth-utils.readthedocs.io/en/stable/) to decode events and
+    compute the checksum 
     (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md) for 
     addresses. Both packages are used internally by web3py.
 """

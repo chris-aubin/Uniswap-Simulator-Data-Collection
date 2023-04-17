@@ -7,16 +7,35 @@ This repo contains the scripts that were used to collect the data necessary to b
 ## transactions.py
 This module fetches all of a pools mint, burn, swap, flash and collect events . It uses the Etherscan API (https://docs.etherscan.io). Etherscan is the leading blockchain explorer, search, API and analytics platform for Ethereum. It also uses the PyCryptodome library (https://www.pycryptodome.org) for computing keccak hashes. It also uses the eth_abi package (https://eth-abi.readthedocs.io/en/latest/index.html) and the eth_utils packages(https://eth-utils.readthedocs.io/en/stable/) to decode events and compute the checksum (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md) for addresses. Both packages are used internally by web3py.
 
-Events are emitted as part of the Ethereum logging/ event-watching protocol. Log entries from emitted events provide information about the function that emitted the event. Events contain the following information:
-  - `address` is the address of the contract
-  - `topics` is an array containing the following:
-    - `topics[0]` is `keccak(EVENT_NAME + "(" + EVENT_ARGS.map(canonical_type_of).join(",") + ")")` 
-      - `canonical_type_of` is a function that simply returns the canonical type of a given argument, e.g. for uint indexed foo, it would return uint256). 
-      - If the event is declared as anonymous the topics[0] is not generated.
-    - `topics[n]` is `EVENT_INDEXED_ARGS[n - 1]` 
-      - `EVENT_INDEXED_ARGS` is the series of `EVENT_ARGS` that are indexed
-      - Up to 3 event arguments can be indexed. The indexed arguments are chosen by the engineer when the event is defined.
-  - `data`: `abi_serialise(EVENT_NON_INDEXED_ARGS)` 
+This is an example of an event emitted by the WBT / ETH pool:
+
+```
+{
+    "address": "0xcbcdf9626bc03e24f779434178a73a0b4bad62ed",
+    "topics": [
+        "0x98636036cb66a9c19a37435efc1e90142190214e8abeb821bdba3f2990dd4c95"
+    ],
+    "data": "0x0000000000000000000000000000000000061b1a1c878c3621dac27d63b440af000000000000000000000000000000000000000000000000000000000003efd5",
+    "blockNumber": "0xbcbf9d",
+    "blockHash": "0x6e6fa02e3efa1c3cb3aa3fa79e3a81e89e2bba0be10836c4893e8bee0fe06b6b",
+    "timeStamp": "0x6091a9fe",
+    "gasPrice": "0xba43b7400",
+    "gasUsed": "0x50ce08",
+    "logIndex": "0x25",
+    "transactionHash": "0xf87d91f3d72a8e912c020c2e316151f3557b1217b44d4f6b6bec126448318530",
+    "transactionIndex": "0x11"
+}
+```
+
+`address` is the address of the contract
+`topics` is an array containing the following:
+`topics[0]` is `keccak(EVENT_NAME + "(" + EVENT_ARGS.map(canonical_type_of).join(",") + ")")` 
+    - `canonical_type_of` is a function that simply returns the canonical type of a given argument, e.g. for `uint256 indexed foo`, it would return `uint256`. 
+    - If the event is declared as anonymous the topics[0] is not generated.
+`topics[n]` is `EVENT_INDEXED_ARGS[n - 1]` 
+    - `EVENT_INDEXED_ARGS` is the series of `EVENT_ARGS` that are indexed
+    - Up to 3 event arguments can be indexed. The indexed arguments are chosen by the engineer when the event is defined.
+`data`: `abi_serialise(EVENT_NON_INDEXED_ARGS)` 
     - `EVENT_NON_INDEXED_ARGS` is the series of `EVENT_ARGS` that are not indexed
     -  `abi_serialise` is the ABI serialisation function used for returning a series of typed values from a function, as per the specification [here](https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#formal-specification-of-the-encoding)
 
@@ -25,6 +44,16 @@ Events are emitted as part of the Ethereum logging/ event-watching protocol. Log
 Read more about Ethereum events [here](https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#events) and read more about the formal encoding of Ethereum events [here](https://docs.soliditylang.org/en/v0.8.17/abi-spec.html#formal-specification-of-the-encoding).
 
 #### Usage
+To use the `transactions.py` script simply call:
+```
+python3 transactions.py pool_address start_date end_date
+```
+
+Where `pool_address` is the address of the pool for which you would like to fetch transactions, `start_date` is the the start of the date range (dd/mm/yyyy) for which you would like to fetch uniswap transactions and `end_date` is the the end of the date range (dd/mm/yyyy) for which you would like to fetch uniswap transactions . For example, the following would fetch all of the mints, burns, swaps, fetches and collects for the WBTC / ETH pool:
+
+```
+python3 transactions.py 0xcbcdf9626bc03e24f779434178a73a0b4bad62ed 31/03/2023 01/04/2023 > results/transactions.txt
+```
 
 ## gas_estimates.py
 Given a json object containing mints/burns/swaps/flashes/ (typically those for a particular pool in a particular date range), prints the average gas used to call each of those methods. If a particular event doesn't occur, prints -1.

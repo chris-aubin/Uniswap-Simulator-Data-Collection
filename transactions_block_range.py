@@ -25,7 +25,7 @@ from argparse import ArgumentParser
 from Crypto.Hash import keccak
 from eth_abi import decode
 from eth_utils import to_checksum_address
-from utils.etherscan_requests import get_block_no_by_time, get_pool_logs
+from utils.etherscan_requests import get_pool_logs
 
 
 #-----------------------------------------------------------------------
@@ -53,6 +53,11 @@ swap_keccak = keccak.new(digest_bits = 256)
 swap_keccak.update(b"Swap(address,address,int256,int256,uint160,uint128,int24)")
 swap_hash  = "0x" + swap_keccak.hexdigest()
 swap_types = ["int256", "int256", "uint160", "uint128", "int24"]
+
+flash_keccak = keccak.new(digest_bits = 256)
+flash_keccak.update(b"Flash(address,address,uint256,uint256,uint256,uint256)")
+flash_hash  = "0x" + flash_keccak.hexdigest()
+flash_types = ["uint256", "uint256", "uint256", "uint256"]
 
 
 def remove_address_padding(address_padded):
@@ -190,6 +195,36 @@ def decode_swap(event):
         }
 
 
+def decode_flash(event):
+    """Decodes flash events"""
+
+    # Use the eth_abi package to decode the data field in the event log
+    # using the non-indexed parameters of the swap function
+    data_bytes  = bytes.fromhex(event['data'][2:])
+    method_data = decode(flash_types, data_bytes)
+
+    # Indexed paramters
+    # All addresses returned by the Etherscan API need to be converted to 
+    # checksummed addresses for use with the web3py library.    
+    sender    = to_checksum_address(remove_address_padding(event['topics'][1]))
+    recipient = to_checksum_address(remove_address_padding(event['topics'][2]))
+
+    # Non-indexed parameters
+    amount0 = method_data[0]
+    amount1 = method_data[1]
+    paid0   = method_data[2]
+    paid1   = method_data[3]
+
+    return {
+        "sender": sender, 
+        "recipient": recipient, 
+        "amount0": amount0, 
+        "amount1": amount1, 
+        "paid0": paid0, 
+        "paid1": paid1, 
+        }
+
+
 def decode_uniswap_event(event):
     """Decodes Uniswap event logs"""
 
@@ -212,8 +247,12 @@ def decode_uniswap_event(event):
     elif (event["topics"][0]) == swap_hash:
         method      = "SWAP"
         method_data = decode_swap(event)
+    elif (event["topics"][0]) == flash_hash:
+        raise Exception("FLASH")
+        method      = "FLASH"
+        method_data = decode_flash(event)
     else:
-        raise Exception("Error! Can only decode mint, burn and swap events.")
+        raise Exception("Error! Can only decode mint, burn, swap and flash events.")
 
     event = {
         "blockNo": block_no, 
@@ -228,7 +267,7 @@ def decode_uniswap_event(event):
     return event
 
 
-def fetch_uniswap_transactions_in_range(pool_address, start_date, end_date):
+def fetch_uniswap_transactions_in_range(pool_address, start_block, end_block):
     """Fetches and decodes all mints, burns and swaps for pool in date range
 
     Keyword arguments:
@@ -236,22 +275,16 @@ def fetch_uniswap_transactions_in_range(pool_address, start_date, end_date):
     start_date   -- the start date (dd/mm/yyyy)
     end_date     -- the end date (dd/mm/yyyy)
     """
-    
-    start_timestamp = int(time.mktime(datetime.datetime.strptime(start_date, "%d/%m/%Y").timetuple()))
-    end_timestamp   = int(time.mktime(datetime.datetime.strptime(end_date, "%d/%m/%Y").timetuple()))
-
-    start_block = get_block_no_by_time(start_timestamp, "after")
-    end_block   = get_block_no_by_time(end_timestamp, "before")
 
     logs = get_pool_logs(pool_address, start_block, end_block)
 
     decoded_transactions = []
 
     for event in logs:
-        if event["topics"][0] in [mint_hash, burn_hash, swap_hash]:
+        if event["topics"][0] in [mint_hash, burn_hash, swap_hash, flash_hash]:
             decoded_transactions.append(decode_uniswap_event(event))
     
-    return {"data": decoded_transactions}, start_block, end_block
+    return {"data": decoded_transactions}
 
 
 def parse_args():
@@ -263,10 +296,10 @@ def parse_args():
     parser = ArgumentParser(description = description, allow_abbrev = False)
     parser.add_argument("pool_address", type = str,
         help = "the address of the relevant Uniswap v3 pool")
-    parser.add_argument("start_date", type = str,
-        help = "the start of the date range (dd/mm/yyyy)")
-    parser.add_argument("end_date", type = str,
-        help = "the end of the date range (dd/mm/yyyy)")
+    parser.add_argument("start_block", type = str,
+        help = "the start of the block range")
+    parser.add_argument("end_block", type = str,
+        help = "the end of the block range")
 
     args = parser.parse_args()
     return vars(args)
@@ -282,13 +315,11 @@ def main():
     try:
         args = parse_args()
         data = {}
-        data, start_block, end_block = fetch_uniswap_transactions_in_range(
-            args["pool_address"], args["start_date"], args["end_date"])
+        data = fetch_uniswap_transactions_in_range(
+            args["pool_address"], args["start_block"], args["end_block"])
         data["poolAddress"] = args["pool_address"]
-        data["startDate"] = args["start_date"]
-        data["endDate"] = args["end_date"]
-        data["startBlock"] = start_block
-        data["endBlock"] = end_block
+        data["startBlock"] = args["start_block"]
+        data["endBlock"] = args["end_block"]
         print(json.dumps(data, indent = 4))
 
     except Exception as ex:

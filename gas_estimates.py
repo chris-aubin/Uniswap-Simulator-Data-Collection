@@ -21,12 +21,14 @@ from argparse import ArgumentParser
 def get_mint_burn_swap_gas_estimates(decoded_events):
     """Calculates the average gas used to call each uniswap method."""
 
-    mint_av    = 0
-    mint_count = 0
-    burn_av    = 0
-    burn_count = 0
-    swap_av    = 0
-    swap_count = 0
+    mint_av     = 0
+    mint_count  = 0
+    burn_av     = 0
+    burn_count  = 0
+    swap_av     = 0
+    swap_count  = 0
+    flash_av    = 0
+    flash_count = 0
 
     for event in decoded_events:
         if event["method"] == "MINT":
@@ -38,12 +40,27 @@ def get_mint_burn_swap_gas_estimates(decoded_events):
         elif event["method"] == "SWAP":
             swap_av    += event["gasUsed"]
             swap_count += 1
+        elif event["method"] == "FLASH":
+            flash_av    += event["gasUsed"]
+            flash_count += 1
+    if mint_count > 0:
+        mint_av = mint_av / mint_count
+    else:
+        mint_av = -1
+    if burn_count > 0:
+        burn_av = burn_av / burn_count
+    else:
+        burn_av = -1
+    if swap_count > 0:
+        swap_av = swap_av / swap_count
+    else:
+        swap_av = -1
+    if flash_count > 0:
+        flash_av = flash_av / flash_count
+    else:
+        flash_av = -1
 
-    mint_av = mint_av / mint_count
-    burn_av = burn_av / burn_count
-    swap_av = swap_av / swap_count
-
-    return {"mintAv": mint_av, "burnAv": burn_av, "swapAv": swap_av}
+    return {"mintAv": mint_av, "burnAv": burn_av, "swapAv": swap_av, "flashAv": flash_av}
 
 
 def parse_args():

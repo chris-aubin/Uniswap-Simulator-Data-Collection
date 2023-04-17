@@ -48,7 +48,7 @@ def get_block_no_by_time(timestamp, closest):
     response_json = json.loads(response.text)
 
     if response_json["message"] != "OK":
-      raise Exception("Error! No closest block found. Likely invalid timestamp.")
+      raise Exception("Error! No closest block found to " + timestamp + ". Likely invalid timestamp.")
     else:
       return int(response_json["result"])
 
@@ -81,7 +81,7 @@ def get_pool_logs(address, from_block, to_block, page = 1):
     response_json = json.loads(response.text)
     
     if response_json["message"] != "OK":
-        raise Exception("Error! No logs found. Likely incorrect address.")
+        raise Exception("Error! No logs found at " + address + ". Likely incorrect address.")
     else:
         return response_json["result"]
 

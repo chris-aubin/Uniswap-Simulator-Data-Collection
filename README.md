@@ -2,8 +2,6 @@
 
 This repo contains the scripts that were used to collect the data necessary to backtest Uniswap v3 liquidity provision strategies using the [Uniswap v3 simulator](https://github.com/chris-aubin/Uniswap-Simulator) that I built as part of my senior (undergraduate) thesis in the Computer Science department at Princeton University. Because it has been my experience that completing even the most simple blockchain-related task tends to be far more complicated than it should be, I have focused on thoroughly documenting all of my code and explaining all of my decisions. I have erred on the side of including excess notes and observations in the hope of including anything that may be helpful to other developers. The keys/ URLs used to access APIs were deactivated as of making this repository public.
 
-## collect_data_for_sim.py
-
 ## transactions.py
 This module fetches all of a pools mint, burn, swap, flash and collect events. The events are printed as a JSON object. It uses the Etherscan API (https://docs.etherscan.io). Etherscan is the leading blockchain explorer, search, API and analytics platform for Ethereum. It also uses the PyCryptodome library (https://www.pycryptodome.org) for computing keccak hashes. It also uses the eth_abi package (https://eth-abi.readthedocs.io/en/latest/index.html) and the eth_utils packages(https://eth-utils.readthedocs.io/en/stable/) to decode events and compute the checksum (https://github.com/ethereum/EIPs/blob/master/EIPS/eip-55.md) for addresses. Both packages are used internally by web3py.
 
